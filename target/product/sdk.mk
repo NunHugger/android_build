@@ -26,17 +26,9 @@ PRODUCT_PACKAGES := \
 	Gallery \
 	Music \
 	Mms \
-	OpenWnn \
-	libWnnEngDic \
-	libWnnJpnDic \
-	libwnndict \
 	Phone \
-	PinyinIME \
-	libjni_pinyinime \
-	Protips \
 	SoftKeyboard \
 	SystemUI \
-	Launcher2 \
 	Development \
 	DevelopmentSettings \
 	DrmProvider \
@@ -46,13 +38,11 @@ PRODUCT_PACKAGES := \
 	CustomLocale \
 	sqlite3 \
 	InputDevices \
-	LatinIME \
 	CertInstaller \
 	LiveWallpapersPicker \
 	ApiDemos \
 	GestureBuilder \
 	CubeLiveWallpapers \
-	QuickSearchBox \
 	WidgetPreview \
 	monkeyrunner \
 	guavalib \
@@ -63,13 +53,11 @@ PRODUCT_PACKAGES := \
 	ConnectivityTest \
 	GpsLocationTest \
 	CalendarProvider \
-	Calendar \
 	SmokeTest \
 	SmokeTestApp \
 	rild \
 	LegacyCamera
 
-include $(SRC_TARGET_DIR)/product/emulator.mk
 
 # Define the host tools and libs that are parts of the SDK.
 -include sdk/build/product_sdk.mk

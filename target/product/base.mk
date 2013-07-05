@@ -27,7 +27,6 @@ PRODUCT_PACKAGES += \
     applypatch \
     bmgr \
     bootanimation \
-    bugreport \
     content \
     dbus-daemon \
     debuggerd \
@@ -73,7 +72,6 @@ PRODUCT_PACKAGES += \
     libhardware \
     libhardware_legacy \
     libiprouteutil \
-    libjni_latinime \
     libjnigraphics \
     libjpeg \
     liblog \
