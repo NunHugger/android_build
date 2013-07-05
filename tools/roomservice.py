@@ -1,13 +1,17 @@
 #!/usr/bin/env python
-
+# Copyright (C) 2012-2013, The CyanogenMod Project
 #
-#	THIS SCRIPT HAS BEEN TAKEN FROM CYANOGENMOD
-#	AND EVERVOLV REPOSITORIES AND ADAPTED TO WORK
-#	WITH POLY ROM.
-#	ALL THE CREDITS GOES TO CYANOGENMOD AND EVERVOLV
-#	TEAM
-#	AS WELL AS WHOEVER ELSE CONTRIBUITED TO THIS FILE
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from __future__ import print_function
 
@@ -33,12 +37,8 @@ except ImportError:
   urllib.request = urllib2
 
 from xml.etree import ElementTree
+
 product = sys.argv[1];
-local_manifests_dir = ".repo/local_manifests"
-default_revison = "jb2"
-dependency_filename = 'poly.dependencies'
-repositories = []
-local_manifests = []
 
 if len(sys.argv) > 2:
     depsonly = sys.argv[2]
@@ -51,19 +51,9 @@ except:
     device = product
 
 if not depsonly:
-    print ("Device %s not found. Attempting to retrieve device repository from PolyDev Github (http://github.com/PolyDev)." % device)
+    print("Device %s not found. Attempting to retrieve device repository from CyanogenMod Github (http://github.com/CyanogenMod)." % device)
 
-try: # Convert from depreciated format
-    if not os.path.isdir(local_manifests_dir):
-        os.makedirs(local_manifests_dir)
-    if os.path.exists(".repo/local_manifest.xml"):
-        os.rename(".repo/local_manifest.xml", os.path.join(local_manifests_dir, "deprecated_manifest.xml"))
-except OSError as e:
-    print ("Fatal: %s" % e)
-    sys.exit()
-
-# list the currently existing manifests
-local_manifests = os.listdir(local_manifests_dir)
+repositories = []
 
 try:
     authtuple = netrc.netrc().authenticators("api.github.com")
@@ -81,14 +71,17 @@ def add_auth(githubreq):
 
 page = 1
 while not depsonly:
-    githubreq = urllib2.Request("https://api.github.com/users/PolyDev/repos?per_page=100&page=%d" % page)
+    githubreq = urllib.request.Request("https://api.github.com/users/CyanogenMod/repos?per_page=100&page=%d" % page)
     add_auth(githubreq)
-    result = json.loads(urllib2.urlopen(githubreq).read())
+    result = json.loads(urllib.request.urlopen(githubreq).read().decode())
     if len(result) == 0:
         break
     for res in result:
         repositories.append(res)
     page = page + 1
+
+local_manifests = r'.repo/local_manifests'
+if not os.path.exists(local_manifests): os.makedirs(local_manifests)
 
 def exists_in_tree(lm, repository):
     for child in lm.getchildren():
@@ -112,17 +105,22 @@ def indent(elem, level=0):
         if level and (not elem.tail or not elem.tail.strip()):
             elem.tail = i
 
-def get_from_manifest(devicename):
-    for manifest in local_manifests:
-        try:
-            lm = ElementTree.parse(os.path.join(local_manifests_dir, manifest))
-            lm = lm.getroot()
-        except:
-            lm = ElementTree.Element("manifest")
+def get_default_revision():
+    m = ElementTree.parse(".repo/manifest.xml")
+    d = m.findall('default')[0]
+    r = d.get('revision')
+    return r.split('/')[-1]
 
-        for localpath in lm.findall("project"):
-            if re.search("android_device_.*_%s$" % device, localpath.get("name")):
-                return localpath.get("path")
+def get_from_manifest(devicename):
+    try:
+        lm = ElementTree.parse(".repo/local_manifests/roomservice.xml")
+        lm = lm.getroot()
+    except:
+        lm = ElementTree.Element("manifest")
+
+    for localpath in lm.findall("project"):
+        if re.search("android_device_.*_%s$" % device, localpath.get("name")):
+            return localpath.get("path")
 
     # Devices originally from AOSP are in the main manifest...
     try:
@@ -138,16 +136,15 @@ def get_from_manifest(devicename):
     return None
 
 def is_in_manifest(projectname):
-    for manifest in local_manifests:
-        try:
-            lm = ElementTree.parse(os.path.join(local_manifests_dir, manifest))
-            lm = lm.getroot()
-        except:
-            lm = ElementTree.Element("manifest")
+    try:
+        lm = ElementTree.parse(".repo/local_manifests/roomservice.xml")
+        lm = lm.getroot()
+    except:
+        lm = ElementTree.Element("manifest")
 
-        for localpath in lm.findall("project"):
-            if localpath.get("name") == projectname:
-                return 1
+    for localpath in lm.findall("project"):
+        if localpath.get("name") == projectname:
+            return 1
 
     ## Search in main manifest, too
     try:
@@ -162,101 +159,78 @@ def is_in_manifest(projectname):
 
     return None
 
-def add_to_manifest(repositories):
-    for repository in repositories:
-        if 'dep_type' in repository:
-            dep_manifest = os.path.join(local_manifests_dir, repository['dep_type'] + ".xml")
-        else:
-            print ('dep_type not found, assuming device tree, otherwise please update your poly.dependencies config')
-            dep_manifest = os.path.join(local_manifests_dir, "device.xml")
-        try:
-            lm = ElementTree.parse(dep_manifest)
-            lm = lm.getroot()
-        except:
-            lm = ElementTree.Element("manifest")
+def add_to_manifest(repositories, fallback_branch = None):
+    try:
+        lm = ElementTree.parse(".repo/local_manifests/roomservice.xml")
+        lm = lm.getroot()
+    except:
+        lm = ElementTree.Element("manifest")
 
+    for repository in repositories:
         repo_name = repository['repository']
         repo_target = repository['target_path']
         if exists_in_tree(lm, repo_name):
-            print ('%s already exists' % (repo_name))
+            print('CyanogenMod/%s already exists' % (repo_name))
             continue
 
-        print ('Adding dependency: %s -> %s' % (repo_name, repo_target))
+        print('Adding dependency: CyanogenMod/%s -> %s' % (repo_name, repo_target))
         project = ElementTree.Element("project", attrib = { "path": repo_target,
-            "remote": "gh", "name": "%s" % repo_name })
+            "remote": "github", "name": "CyanogenMod/%s" % repo_name })
 
         if 'branch' in repository:
             project.set('revision',repository['branch'])
+        elif fallback_branch:
+            print("Using fallback branch %s for %s" % (fallback_branch, repo_name))
+            project.set('revision', fallback_branch)
         else:
-            project.set('revision',default_revison)
+            print("Using default branch for %s" % repo_name)
 
         lm.append(project)
 
-        indent(lm, 0)
-        raw_xml = ElementTree.tostring(lm)
-        raw_xml = '<?xml version="1.0" encoding="UTF-8"?>\n' + raw_xml
+    indent(lm, 0)
+    raw_xml = ElementTree.tostring(lm).decode()
+    raw_xml = '<?xml version="1.0" encoding="UTF-8"?>\n' + raw_xml
 
-        f = open(dep_manifest, 'w')
-        f.write(raw_xml)
-        f.close()
+    f = open('.repo/local_manifests/roomservice.xml', 'w')
+    f.write(raw_xml)
+    f.close()
 
-def fetch_repos(repos):
-    '''Adds repo to manifest and syncs'''
+def fetch_dependencies(repo_path, fallback_branch = None):
+    print('Looking for dependencies')
+    dependencies_path = repo_path + '/cm.dependencies'
+    syncable_repos = []
 
-    fetch_list = []
-    for r in repos:
-        if not is_in_manifest('%s' % r.get('repository')):
-            fetch_list.append(r)
+    if os.path.exists(dependencies_path):
+        dependencies_file = open(dependencies_path, 'r')
+        dependencies = json.loads(dependencies_file.read())
+        fetch_list = []
 
-    if fetch_list:
-        add_to_manifest(fetch_list)
-        repo_paths = ' '.join([ r.get('target_path') for r in fetch_list ])
-        print ('Syncing', repo_paths)
-        os.system('repo sync -f %s' % repo_paths)
+        for dependency in dependencies:
+            if not is_in_manifest("CyanogenMod/%s" % dependency['repository']):
+                fetch_list.append(dependency)
+                syncable_repos.append(dependency['target_path'])
 
-def fetch_children(repos):
-    '''Locate any device dependencies'''
+        dependencies_file.close()
 
-    children = []
-    for r in repos:
-        if r.get('dep_type') == 'device':
-            try:
-                with open(os.path.join(r.get('target_path'),dependency_filename)) as f:
-                    #print r.get('target_path')
-                    children.extend(json.load(f))
-            except IOError:
-                continue
-    fetch_repos(children)
-    return children
+        if len(fetch_list) > 0:
+            print('Adding dependencies to manifest')
+            add_to_manifest(fetch_list, fallback_branch)
+    else:
+        print('Dependencies file not found, bailing out.')
 
-def fetch_dependencies(repo_path):
-    '''Add any and all dependencies found'''
+    if len(syncable_repos) > 0:
+        print('Syncing dependencies')
+        os.system('repo sync %s' % ' '.join(syncable_repos))
 
-    dependencies = []
-
-    try:
-        with open(os.path.join(repo_path,dependency_filename)) as f:
-            dependencies = json.load(f)
-    except IOError as e:
-        print (e)
-
-    # Fetch toplevel dependencies
-    fetch_repos(dependencies)
-
-    # Locate any extra dependencies
-    children = dependencies
-    while True:
-        children = fetch_children(children)
-        if not children:
-            break
-
+def has_branch(branches, revision):
+    return revision in [branch['name'] for branch in branches]
 
 if depsonly:
     repo_path = get_from_manifest(device)
     if repo_path:
         fetch_dependencies(repo_path)
     else:
-        print ("Trying dependencies-only mode on a non-existing device tree?")
+        print("Trying dependencies-only mode on a non-existing device tree?")
 
     sys.exit()
 
@@ -264,21 +238,52 @@ else:
     for repository in repositories:
         repo_name = repository['name']
         if repo_name.startswith("android_device_") and repo_name.endswith("_" + device):
-            print ("Found repository: %s" % repository['name'])
+            print("Found repository: %s" % repository['name'])
+            
             manufacturer = repo_name.replace("android_device_", "").replace("_" + device, "")
+            
+            default_revision = get_default_revision()
+            print("Default revision: %s" % default_revision)
+            print("Checking branch info")
+            githubreq = urllib.request.Request(repository['branches_url'].replace('{/branch}', ''))
+            add_auth(githubreq)
+            result = json.loads(urllib.request.urlopen(githubreq).read().decode())
 
+            ## Try tags, too, since that's what releases use
+            if not has_branch(result, default_revision):
+                githubreq = urllib.request.Request(repository['tags_url'].replace('{/tag}', ''))
+                add_auth(githubreq)
+                result.extend (json.loads(urllib.request.urlopen(githubreq).read().decode()))
+            
             repo_path = "device/%s/%s" % (manufacturer, device)
-	    final_name = "PolyDev/" + repo_name
-            add_to_manifest([{'repository':final_name,
-                              'target_path':repo_path,
-                              'dep_type':'device'}])
+            adding = {'repository':repo_name,'target_path':repo_path}
+            
+            fallback_branch = None
+            if not has_branch(result, default_revision):
+                if os.getenv('ROOMSERVICE_BRANCHES'):
+                    fallbacks = list(filter(bool, os.getenv('ROOMSERVICE_BRANCHES').split(' ')))
+                    for fallback in fallbacks:
+                        if has_branch(result, fallback):
+                            print("Using fallback branch: %s" % fallback)
+                            fallback_branch = fallback
+                            break
 
-            print ("Syncing repository to retrieve project.")
-            os.system('repo sync -f %s' % repo_path)
-            print ("Repository synced!")
+                if not fallback_branch:
+                    print("Default revision %s not found in %s. Bailing." % (default_revision, repo_name))
+                    print("Branches found:")
+                    for branch in [branch['name'] for branch in result]:
+                        print(branch)
+                    print("Use the ROOMSERVICE_BRANCHES environment variable to specify a list of fallback branches.")
+                    sys.exit()
 
-            fetch_dependencies(repo_path)
-            print ("Done")
+            add_to_manifest([adding], fallback_branch)
+
+            print("Syncing repository to retrieve project.")
+            os.system('repo sync %s' % repo_path)
+            print("Repository synced!")
+
+            fetch_dependencies(repo_path, fallback_branch)
+            print("Done")
             sys.exit()
 
-print ("Repository for %s not found in the PolyDev Github repository list. If this is in error, you may need to manually add it to your local_manifests." % device)
+print("Repository for %s not found in the CyanogenMod Github repository list. If this is in error, you may need to manually add it to your local_manifests/roomservice.xml." % device)
