@@ -568,17 +568,18 @@ function lunch()
     check_product $product
     if [ $? -ne 0 ]
     then
-        # if we can't find a product, try to grab it off the CM github
-        T=$(gettop)
-        pushd $T > /dev/null
-        build/tools/roomservice.py $product
-        popd > /dev/null
-        check_product $product
-    else
-        build/tools/roomservice.py $product true
-    fi
-    if [ $? -ne 0 ]
-    then
+# Removing roomservice for now; need to have a mani that works with it.
+        # if we can't find a product, try to grab it off the PolyculeRom github
+#        T=$(gettop)
+#        pushd $T > /dev/null
+#        build/tools/roomservice.py $product
+#        popd > /dev/null
+#        check_product $product
+#    else
+#        build/tools/roomservice.py $product true
+#    fi
+#    if [ $? -ne 0 ]
+#    then
         echo
         echo "** Don't have a product spec for: '$product'"
         echo "** Do you have the right repo manifest?"
@@ -703,7 +704,7 @@ EOF
     fi
     return $?
     else
-        echo "The connected device does not appear to be $CM_BUILD, run away!"
+        echo "The connected device does not appear to be $POLY_BUILD, run away!"
     fi
 }
 
@@ -1782,7 +1783,7 @@ function dopush()
         echo "Device Found."
     fi
 
-    if (adb shell cat /system/build.prop | grep -q "ro.cm.device=$CM_BUILD");
+    if (adb shell cat /system/build.prop | grep -q "ro.poly.device=$POLY_BUILD");
     then
     adb root &> /dev/null
     sleep 0.3
@@ -1824,7 +1825,7 @@ function dopush()
     rm -f $OUT/.log
     return 0
     else
-        echo "The connected device does not appear to be $CM_BUILD, run away!"
+        echo "The connected device does not appear to be $POLY_BUILD, run away!"
     fi
 }
 
