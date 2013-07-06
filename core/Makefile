@@ -881,7 +881,7 @@ SYSTEMIMAGE_SOURCE_DIR := $(TARGET_OUT)
 ifneq ($(INSTALLED_RECOVERYIMAGE_TARGET),)
 intermediates := $(call intermediates-dir-for,PACKAGING,recovery_patch)
 ifndef BOARD_CUSTOM_BOOTIMG_MK
-ifeq ($(POLY_BUILD),)
+ifeq ($(CM_BUILD),)
 RECOVERY_FROM_BOOT_PATCH := $(intermediates)/recovery_from_boot.p
 else
 RECOVERY_FROM_BOOT_PATCH :=
@@ -1316,7 +1316,7 @@ else
     OTA_FROM_TARGET_SCRIPT := $(TARGET_RELEASETOOL_OTA_FROM_TARGET_SCRIPT)
 endif
 
-ifneq ($(POLY_BUILD),)
+ifneq ($(CM_BUILD),)
     $(INTERNAL_OTA_PACKAGE_TARGET): backuptool := true
 else
     $(INTERNAL_OTA_PACKAGE_TARGET): backuptool := false
@@ -1337,7 +1337,7 @@ $(INTERNAL_OTA_PACKAGE_TARGET): $(BUILT_TARGET_FILES_PACKAGE) $(DISTTOOLS)
 	   --override_device=$(override_device) \
 	   $(BUILT_TARGET_FILES_PACKAGE) $@
 
-POLY_TARGET_PACKAGE := $(PRODUCT_OUT)/poly-$(POLY_VERSION).zip
+CM_TARGET_PACKAGE := $(PRODUCT_OUT)/poly-$(CM_VERSION).zip
 
 .PHONY: otapackage bacon
 otapackage: $(INTERNAL_OTA_PACKAGE_TARGET)
@@ -1345,9 +1345,9 @@ bacon: otapackage
 ifneq ($(TARGET_CUSTOM_RELEASETOOL),)
 	$(error TARGET_CUSTOM_RELEASETOOL is deprecated)
 endif
-	$(hide) ln -f $(INTERNAL_OTA_PACKAGE_TARGET) $(POLY_TARGET_PACKAGE)
-	$(hide) $(MD5SUM) $(POLY_TARGET_PACKAGE) > $(POLY_TARGET_PACKAGE).md5sum
-	@echo -e ${CL_CYN}"Package Complete: $(POLY_TARGET_PACKAGE)"${CL_RST}
+	$(hide) ln -f $(INTERNAL_OTA_PACKAGE_TARGET) $(CM_TARGET_PACKAGE)
+	$(hide) $(MD5SUM) $(CM_TARGET_PACKAGE) > $(CM_TARGET_PACKAGE).md5sum
+	@echo -e ${CL_CYN}"Package Complete: $(CM_TARGET_PACKAGE)"${CL_RST}
 
 # -----------------------------------------------------------------
 # The update package
