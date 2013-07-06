@@ -70,12 +70,12 @@ function check_product()
         return
     fi
 
-    if (echo -n $1 | grep -q -e "^cm_") ; then
-       CM_BUILD=$(echo -n $1 | sed -e 's/^cm_//g')
+    if (echo -n $1 | grep -q -e "^poly_") ; then
+       POLY_BUILD=$(echo -n $1 | sed -e 's/^poly_//g')
     else
-       CM_BUILD=
+       POLY_BUILD=
     fi
-    export CM_BUILD
+    export POLY_BUILD
 
     CALLED_FROM_SETUP=true BUILD_SYSTEM=build/core \
         TARGET_PRODUCT=$1 \
